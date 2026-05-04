@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Microphone Permission</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #0a0a0a;
+      --white: #fafafa;
+      --gray-100: #f4f4f4;
+      --gray-200: #e0e0e0;
+      --gray-400: #a0a0a0;
+      --gray-600: #555;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--black);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .card {
+      background: var(--white);
+      color: var(--black);
+      border-radius: 2px;
+      padding: 3rem 2.5rem 2.5rem;
+      max-width: 400px;
+      width: 100%;
+      position: relative;
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    @keyframes slideUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .corner-mark {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 8px;
+      height: 8px;
+      border-top: 1.5px solid var(--gray-200);
+      border-right: 1.5px solid var(--gray-200);
+    }
+    .corner-mark.bl {
+      top: auto; right: auto;
+      bottom: 1.25rem; left: 1.25rem;
+      border-top: none; border-right: none;
+      border-bottom: 1.5px solid var(--gray-200);
+      border-left: 1.5px solid var(--gray-200);
+    }
+
+    .icon-wrap {
+      width: 56px;
+      height: 56px;
+      border: 1.5px solid var(--black);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .icon-wrap::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1px solid var(--gray-200);
+      transform: scale(1.35);
+    }
+
+    .mic-svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 0.6rem;
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      color: var(--black);
+    }
+
+    p {
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--gray-600);
+      margin-bottom: 2rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--gray-200);
+      margin-bottom: 2rem;
+    }
+
+    .step-list {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .step-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-bottom: 12px;
+    }
+
+    .step-num {
+      font-size: 10px;
+      font-weight: 500;
+      min-width: 20px;
+      height: 20px;
+      border: 1px solid var(--gray-200);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--black);
+      margin-top: 1px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 24px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      margin-bottom: 0.75rem;
+    }
+
+    .btn:hover { background: #222; }
+    .btn:active { transform: scale(0.99); }
+
+    .btn-ghost {
+      display: block;
+      width: 100%;
+      padding: 12px 24px;
+      background: transparent;
+      color: var(--gray-400);
+      border: 1px solid var(--gray-200);
+      border-radius: 1px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-ghost:hover { border-color: var(--gray-400); color: var(--black); }
+
+    .status {
+      display: none;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      margin-top: 1rem;
+      padding: 10px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: 1px;
+      color: var(--gray-600);
+      text-align: center;
+    }
+
+    .status.visible { display: block; }
+    .status.granted { border-color: var(--black); color: var(--black); }
+    .status.denied { color: #c0392b; border-color: #c0392b; }
+
+    .pulse {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      margin-right: 6px;
+      vertical-align: middle;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="corner-mark"></div>
+    <div class="corner-mark bl"></div>
+
+    <div class="icon-wrap">
+      <svg class="mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="11" rx="3"/>
+        <path d="M5 10a7 7 0 0 0 14 0"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="8" y1="22" x2="16" y2="22"/>
+      </svg>
+    </div>
+
+    <p class="label">Permission required</p>
+    <h1>Microphone<br>access</h1>
+
+    <p>This extension needs access to your microphone to capture and transcribe your voice notes in real time.</p>
+
+    <div class="divider"></div>
+
+    <ul class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <span>Click <strong>Allow microphone</strong> below to trigger the browser prompt</span>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <span>Select <strong>Allow</strong> when your browser asks for permission</span>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <span>You're set — start recording voice notes instantly</span>
+      </li>
+    </ul>
+
+    <button class="btn" id="requestBtn">Allow microphone</button>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="request-mic.js" defer></script>
+</body>
+</html>

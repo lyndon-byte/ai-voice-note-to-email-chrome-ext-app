@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* 1. Target the entire scrollbar width */
+::-webkit-scrollbar {
+  width: 5px;               /* Width for vertical scrollbar */
+  height: 5px;              /* Height for horizontal scrollbar */
+  background: transparent;  /* Keeps the track clean */
+}
+
+/* 2. Target the draggable scrolling handle */
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2); /* Semi-transparent gray */
+  border-radius: 10px;            /* Rounds the pill shape */
+}
+
+/* 3. Darken the handle slightly when the user hovers over it */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* 4. Optional: Firefox support (it does not support webkit) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
