@@ -207,8 +207,18 @@ const EmailCard = ({ subject, body, streaming }) => (
 );
 
 // ─── Chat bubble ──────────────────────────────────────────────────────────────
-const Bubble = ({ role, children }) => {
+const Bubble = ({ role, children, naked = false }) => {
   const isAI = role === 'ai';
+
+  if (isAI && naked) {
+    // No shell — EmailCard is the only visual
+    return (
+      <div className="bubble-in" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <div style={{ width: '100%' }}>{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="bubble-in"
@@ -250,8 +260,8 @@ export default function EmailScreen() {
 
   const [isTranscribing, setIsTranscribing] = useState(true);
   const [transcribeDone, setTranscribeDone] = useState(false);
-  const [emailData, setEmailData]           = useState({ subject: '', body: '' });
   const [isStreaming, setIsStreaming]        = useState(false);
+  const [emailMap, setEmailMap]             = useState({});
   const [inputText, setInputText]           = useState('');
   const [authToken, setAuthToken]           = useState(null);
 
@@ -264,7 +274,7 @@ export default function EmailScreen() {
     transport: new DefaultChatTransport({ api: 'http://localhost:3000/api/generate-email' }),
   });
 
-  // ── Parse streaming AI JSON ───────────────────────────────────────────────
+  // ── Parse streaming AI JSON — track per message id ───────────────────────
   useEffect(() => {
     const aiMsgs = messages.filter(m => m.role === 'assistant');
     if (!aiMsgs.length) return;
@@ -273,15 +283,15 @@ export default function EmailScreen() {
     const fullText = last.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || '';
     if (!fullText) return;
 
-    setIsStreaming(true);
+    const done = fullText.trimEnd().endsWith('}');
+    setIsStreaming(!done);
+
     try {
       const parsed  = parse(fullText);
       const subject = parsed?.emailMessage?.emailSubject || '';
       const body    = parsed?.emailMessage?.emailBody    || '';
-      setEmailData({ subject, body });
+      setEmailMap(prev => ({ ...prev, [last.id]: { subject, body, done } }));
     } catch { /* partial — keep waiting */ }
-
-    if (fullText.trimEnd().endsWith('}')) setIsStreaming(false);
   }, [messages]);
 
   // ── Transcribe on mount ───────────────────────────────────────────────────
@@ -323,13 +333,13 @@ export default function EmailScreen() {
   // ── Auto-scroll ───────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTranscribing, isStreaming, emailData]);
+  }, [messages, isTranscribing, isStreaming, emailMap]);
 
   // ── Auto-grow textarea ────────────────────────────────────────────────────
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = '20px';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   }, [inputText]);
 
@@ -345,8 +355,8 @@ export default function EmailScreen() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const userMessages  = messages.filter(m => m.role === 'user');
-  const hasAIResponse = messages.some(m => m.role === 'assistant');
+  const lastAiMsg     = messages.filter(m => m.role === 'assistant').at(-1);
+  const isAiPending   = transcribeDone && isStreaming;
   const canSend       = inputText.trim().length > 0 && !isStreaming;
 
   return (
@@ -419,7 +429,7 @@ export default function EmailScreen() {
         }}>
           <div style={{ maxWidth: 640, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 11 }}>
 
-            {/* Transcription / audio bubble */}
+            {/* Transcription / audio bubble — always first */}
             <Bubble role="ai">
               {isTranscribing
                 ? <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -430,24 +440,37 @@ export default function EmailScreen() {
               }
             </Bubble>
 
-            {/* User messages */}
-            {userMessages.map(msg => (
-              <Bubble key={msg.id} role="user">
-                {msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('')}
-              </Bubble>
-            ))}
+            {/* Render each message as its own bubble in order */}
+            {messages.map((msg, idx) => {
+              if (msg.role === 'user') {
+                const text = msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || '';
+                return (
+                  <Bubble key={msg.id} role="user">{text}</Bubble>
+                );
+              }
 
-            {/* Thinking */}
-            {transcribeDone && !hasAIResponse && (
-              <Bubble role="ai"><ThinkingDots /></Bubble>
-            )}
+              if (msg.role === 'assistant') {
+                const isLast    = msg === lastAiMsg;
+                const streaming = isLast && isStreaming;
+                const data      = emailMap[msg.id] || { subject: '', body: '' };
+                return (
+                  <Bubble key={msg.id} role="ai" naked>
+                    <EmailCard subject={data.subject} body={data.body} streaming={streaming} />
+                  </Bubble>
+                );
+              }
 
-            {/* Email card */}
-            {hasAIResponse && (
-              <Bubble role="ai">
-                <EmailCard subject={emailData.subject} body={emailData.body} streaming={isStreaming} />
-              </Bubble>
-            )}
+              return null;
+            })}
+
+            {/* Thinking indicator — shows after user sends, before AI response token arrives */}
+            {transcribeDone && !isStreaming && (() => {
+              const msgs = messages;
+              const lastMsg = msgs.at(-1);
+              return lastMsg?.role === 'user' ? (
+                <Bubble role="ai"><ThinkingDots /></Bubble>
+              ) : null;
+            })()}
 
             <div ref={bottomRef} style={{ height: 4 }} />
           </div>
@@ -470,12 +493,12 @@ export default function EmailScreen() {
             {/* Input row */}
             <div style={{
               display: 'flex',
-              alignItems: 'flex-end',
+              alignItems: 'center',
               gap: 8,
               background: '#f7f7f3',
               border: '1.5px solid #e4e4e0',
               borderRadius: 22,
-              padding: '8px 8px 8px 15px',
+              padding: '7px 7px 7px 15px',
             }}>
               <textarea
                 ref={textareaRef}
@@ -492,11 +515,15 @@ export default function EmailScreen() {
                   fontSize: 14,
                   color: '#111',
                   fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  lineHeight: 1.55,
+                  lineHeight: '20px',
+                  height: '20px',
                   maxHeight: 120,
                   overflowY: 'auto',
                   WebkitOverflowScrolling: 'touch',
                   caretColor: '#111',
+                  padding: 0,
+                  margin: 0,
+                  display: 'block',
                 }}
               />
               <button
@@ -504,7 +531,7 @@ export default function EmailScreen() {
                 onClick={handleSend}
                 disabled={!canSend}
                 style={{
-                  width: 36, height: 36,
+                  width: 34, height: 34,
                   borderRadius: '50%',
                   background: canSend ? '#111' : '#e8e8e4',
                   border: 'none',
