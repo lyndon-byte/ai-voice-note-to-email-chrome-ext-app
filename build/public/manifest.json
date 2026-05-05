@@ -8,6 +8,7 @@
     "storage", 
     "offscreen",
     "sidePanel",
+    "scripting",
     "tabs"
   ],
   "host_permissions": [

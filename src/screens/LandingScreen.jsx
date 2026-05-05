@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import AudioOrb from '../components/AudioOrb';
-import { useNavigate } from 'react-router-dom';
+import { redirect, useNavigate } from 'react-router-dom';
 
 export default function LandingScreen() {
 
@@ -13,6 +13,7 @@ export default function LandingScreen() {
   const chunksRef = useRef([]);
   const analyserRef = useRef(null);
   const audioRef = useRef(null);
+  const isDiscardedRef = useRef(false);
 
   const navigate = useNavigate()
 
@@ -57,7 +58,8 @@ export default function LandingScreen() {
 
     try {
 
-      setIsPaused(false);
+      setIsPaused(false); 
+      isDiscardedRef.current = false; 
 
       const hasPermission = await requestPermissionFallback();
       if (!hasPermission) return;
@@ -87,6 +89,10 @@ export default function LandingScreen() {
       };
 
       recorder.onstop = () => {
+
+        if (isDiscardedRef.current) {
+          return; 
+        }
 
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(blob);
@@ -147,7 +153,9 @@ export default function LandingScreen() {
 
   const handleDiscard = () => {
 
-      stopStream()
+    isDiscardedRef.current = true
+
+    stopStream()
 
   }
 
