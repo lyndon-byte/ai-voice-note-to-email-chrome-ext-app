@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { initializeApp } from 'firebase/app';
-import { getAuth, onIdTokenChanged } from 'firebase/auth';
+import { getAuth, onIdTokenChanged } from 'firebase/auth/web-extension';
 import { firebaseConfig } from './config/firebase-config';
 import { Loader } from './components/Loader';
 
@@ -29,7 +29,7 @@ const useFirebaseAuth = () => {
 
   useEffect(() => {
 
-    const unsubscribe = onIdTokenChanged(auth, (user) => {
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
       setAuthState({
         isAuthenticated: !!user,
         isLoading: false,
