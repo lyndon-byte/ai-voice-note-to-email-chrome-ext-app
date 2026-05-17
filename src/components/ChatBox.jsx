@@ -5,6 +5,7 @@ import EmailCard from './EmailCard';
 import ChatBubble from './ChatBubble';
 import AudioRecorder from './AudioRecorder';
 import { useEffect, useState, useRef } from 'react'
+import { ChatBoxEmptyPlaceholder } from './ChatBoxEmptyPlaceholder';
 
 const ThinkingDots = () => (
   <div style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '2px 0' }}>
@@ -13,182 +14,6 @@ const ThinkingDots = () => (
     ))}
   </div>
 );
-
-/* ── Waveform icon — a row of animated bars ── */
-const WaveformIcon = () => (
-  <svg width="36" height="24" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-    style={{ display: 'block' }}>
-    <style>{`
-      @keyframes wv { 0%,100%{transform:scaleY(.25)} 50%{transform:scaleY(1)} }
-      .wb { transform-origin: center; animation: wv 1.1s ease-in-out infinite; }
-      .wb:nth-child(1){ animation-delay:0s }
-      .wb:nth-child(2){ animation-delay:.1s }
-      .wb:nth-child(3){ animation-delay:.2s }
-      .wb:nth-child(4){ animation-delay:.1s }
-      .wb:nth-child(5){ animation-delay:0s }
-    `}</style>
-    {[4, 8, 12, 8, 4].map((h, i) => (
-      <rect
-        key={i}
-        className="wb"
-        x={i * 8 + 2}
-        y={(24 - h * 2) / 2}
-        width="4"
-        height={h * 2}
-        rx="2"
-        fill="currentColor"
-      />
-    ))}
-  </svg>
-);
-
-const EmptyState = ({ onPrompt }) => {
-  
-  const prompts = [
-    "Follow up on last week's proposal",
-    "Schedule a team sync for Thursday",
-    "Thank them for the quick turnaround",
-    "Request a revised quote by Friday",
-  ];
-
-  return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '32px 24px',
-      gap: 0,
-      userSelect: 'none',
-    }}>
-
-      {/* Icon badge */}
-      <div style={{
-        width: 68,
-        height: 68,
-        borderRadius: '20px',
-        background: 'linear-gradient(135deg, #0f0f0f 0%, #2a2a2a 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 22,
-        color: '#fff',
-        boxShadow: '0 8px 32px rgba(0,0,0,.18), 0 1px 0 rgba(255,255,255,.08) inset',
-        position: 'relative',
-      }}>
-        <WaveformIcon />
-        {/* Subtle glow ring */}
-        <div style={{
-          position: 'absolute',
-          inset: -1,
-          borderRadius: 21,
-          border: '1px solid rgba(255,255,255,.12)',
-          pointerEvents: 'none',
-        }} />
-      </div>
-
-      {/* Headline */}
-      <div style={{
-        fontSize: 17,
-        fontWeight: 700,
-        color: '#111',
-        fontFamily: 'Plus Jakarta Sans, sans-serif',
-        letterSpacing: '-.3px',
-        marginBottom: 6,
-        textAlign: 'center',
-      }}>
-        Start with a voice note
-      </div>
-
-      {/* Sub-headline */}
-      <div style={{
-        fontSize: 13,
-        color: '#888',
-        fontFamily: 'Plus Jakarta Sans, sans-serif',
-        lineHeight: 1.55,
-        textAlign: 'center',
-        maxWidth: 240,
-        marginBottom: 28,
-      }}>
-        Describe the email you need — AI will draft it instantly
-      </div>
-
-      {/* Divider label */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        width: '100%',
-        maxWidth: 320,
-        marginBottom: 14,
-      }}>
-        <div style={{ flex: 1, height: 1, background: '#ebebeb' }} />
-        <span style={{
-          fontSize: 10,
-          fontFamily: 'DM Mono, monospace',
-          color: '#c0c0c0',
-          letterSpacing: '1px',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-        }}>or try a prompt</span>
-        <div style={{ flex: 1, height: 1, background: '#ebebeb' }} />
-      </div>
-
-      {/* Quick-prompt chips */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 7,
-        width: '100%',
-        maxWidth: 320,
-      }}>
-        {prompts.map((p, i) => (
-          <button
-            key={i}
-            onClick={() => onPrompt(p)}
-            style={{
-              background: '#fafaf8',
-              border: '1.5px solid #e8e8e4',
-              borderRadius: 12,
-              padding: '9px 14px',
-              textAlign: 'left',
-              fontSize: 12.5,
-              fontFamily: 'Plus Jakarta Sans, sans-serif',
-              color: '#444',
-              cursor: 'pointer',
-              lineHeight: 1.4,
-              transition: 'background .12s, border-color .12s, transform .1s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#f0f0ec';
-              e.currentTarget.style.borderColor = '#d0d0cb';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = '#fafaf8';
-              e.currentTarget.style.borderColor = '#e8e8e4';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            {/* Arrow */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              stroke="#bbb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-              style={{ flexShrink: 0 }}
-            >
-              <line x1="5" y1="12" x2="19" y2="12"/>
-              <polyline points="12 5 19 12 12 19"/>
-            </svg>
-            {p}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 export default function ChatBox({ chatId, initialMessages, token }) {
 
@@ -206,7 +31,8 @@ export default function ChatBox({ chatId, initialMessages, token }) {
     }),
   });
 
-  const insertIntoGmailStream = async (subjectText, bodyText, isDone = false) => {
+ const insertIntoGmailStream = async (subjectText, bodyText, isDone = false) => {
+  
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return;
@@ -317,7 +143,11 @@ export default function ChatBox({ chatId, initialMessages, token }) {
           }
 
           if (bodyEl && bodyVisible) {
-            const normalize = (text) => text.replace(/\n/g, '<div><br></div>');
+            const normalize = (text) =>
+                  text
+                    .split('\n')
+                    .map(line => `<div>${line || '<br>'}</div>`)
+                    .join('');
             const newHTML   = normalize(body);
             if (bodyEl.innerHTML !== newHTML) {
               const selection = window.getSelection();
@@ -386,18 +216,13 @@ export default function ChatBox({ chatId, initialMessages, token }) {
     setInputText('');
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
-
   const lastAiMsg = messages.filter(m => m.role === 'assistant').at(-1);
-  const canSend   = inputText.trim().length > 0 && !isStreaming;
   const isEmpty   = messages.length === 0 && status !== 'submitted';
 
   return (
     <>
       {isEmpty ? (
-        <EmptyState onPrompt={(p) => { setInputText(p); setTimeout(() => textareaRef.current?.focus(), 0); }} />
+        <ChatBoxEmptyPlaceholder />
       ) : (
         <div style={{
           flex: 1,
@@ -448,7 +273,8 @@ export default function ChatBox({ chatId, initialMessages, token }) {
       )}
 
       {/* ── Sticky input footer ── */}
-      <div style={{
+      <div 
+      style={{
         background: '#fff',
         borderTop: isEmpty ? 'none' : '1px solid #eaeae6',
         padding: '10px 13px 12px',
@@ -475,7 +301,7 @@ export default function ChatBox({ chatId, initialMessages, token }) {
             fontFamily: 'DM Mono, monospace',
             letterSpacing: 0.4,
           }}>
-            Enter to send · Shift+Enter for new line
+            Talking to Eleven 
           </div>
         </div>
       </div>

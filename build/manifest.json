@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Voice Note to Email",
+  "name": "Talking to Eleven",
   "version": "1.0.0",
   "description": "Record voice notes and send them via email",
   "permissions": [
@@ -22,6 +22,7 @@
     "default_path" : "index.html"
   },
   "action": {
-    "default_title": "AI Voice Note to Email"
+    "default_title": "Talking to Eleven"
   }
+
 }

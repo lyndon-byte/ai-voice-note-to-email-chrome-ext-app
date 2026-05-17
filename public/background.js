@@ -3,12 +3,12 @@ import { getAuth, GoogleAuthProvider, signInWithCredential  } from "https://www.
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyCv_zR0pU9zromm_wTtozc1MXo3jdu1SGo",
-  authDomain: "test-project-62c72.firebaseapp.com",
-  projectId: "test-project-62c72",
-  storageBucket: "test-project-62c72.firebasestorage.app",
-  messagingSenderId: "242081757191",
-  appId: "1:242081757191:web:525aa97a9b1b6e4fc692a2"
+  apiKey: "AIzaSyAltIkpCZYgKyLaFrmN8KUZNNMvEmTA4eo",
+  authDomain: "voice-note-to-email-ai.firebaseapp.com",
+  projectId: "voice-note-to-email-ai",
+  storageBucket: "voice-note-to-email-ai.firebasestorage.app",
+  messagingSenderId: "897803120673",
+  appId: "1:897803120673:web:6c087885f541d13904b360",
 
 };
 

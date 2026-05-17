@@ -9,8 +9,8 @@ export default function LandingScreen() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(null);
+  const [totalPages, setTotalPages] = useState(null);
 
   const navigate = useNavigate()
   const user = getCurrentUser();
@@ -21,7 +21,7 @@ export default function LandingScreen() {
 
   }, [page]);
 
-  async function fetchChats(currentPage) {
+  async function fetchChats(page) {
 
     setLoading(true);
     setError(null);
@@ -31,16 +31,24 @@ export default function LandingScreen() {
     try {
       const { data } = await axios.get("http://localhost:3000/api/chats", {
         headers: { Authorization: `Bearer ${token}` },
-        params: { page: currentPage },
+        params: { page },
       });
-      const mapped = data.map((item) => ({
+
+      const chats = data.data || [];
+
+      const totalPages = data.pagination?.totalPages
+      const currentPage = data.pagination?.currentPage
+
+      const mapped = chats.map((item) => ({
         chatId: item.chatId,
         title: item.title,
         updatedAt: item.updatedAt,
       }));
+
       setSessions(mapped);
-      const total = data.total || mapped.length;
-      setTotalPages(Math.max(1, Math.ceil(total / 10)));
+      setPage(currentPage)
+      setTotalPages(totalPages);
+
     } catch (err) {
       setError("Could not load sessions.");
     } finally {
@@ -91,12 +99,13 @@ export default function LandingScreen() {
   }
 
   return (
+
     <div className="bg-white min-h-screen w-full flex flex-col">
 
       {/* Header — tight, no excess top padding */}
       <header className="flex items-center justify-between px-5 pt-5 pb-4">
         <div>
-          <p className="text-xs text-gray-400 tracking-wide leading-none mb-1">
+          <p className="text-xs text-gray-500 tracking-wide leading-none mb-1">
             {getGreeting()},
           </p>
           <h1 className="text-2xl font-normal text-gray-900 tracking-tight leading-none">
@@ -124,12 +133,12 @@ export default function LandingScreen() {
         </button>
       </header>
 
-      <div className="border-t border-gray-100 mx-5" />
+      <div className="border-t border-gray-200 mx-5" />
 
       {/* Body */}
       <main className="flex-1 pt-3">
-        <p className="text-[10px] uppercase tracking-widest text-gray-300 px-5 mb-2">
-          Recent sessions
+        <p className="text-[10px] uppercase tracking-widest text-gray-700 px-5 mb-2">
+          Recents 
         </p>
 
         {/* Skeleton */}
@@ -176,30 +185,26 @@ export default function LandingScreen() {
 
         {/* Sessions list */}
         {!loading && !error && sessions.length > 0 && (
-          <ul className="w-full">
+          <ul className="w-full space-y-3 px-5">
             {sessions.map((s, idx) => (
               <li key={s.chatId} className="w-full">
                 <button
                   type="button"
                   onClick={() => handleSessionClick(s.chatId)}
-                  className="w-full flex items-center justify-between px-5 py-3.5 text-left active:bg-gray-50 transition-colors gap-3 cursor-pointer"
+                  className="w-full flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-4 text-left shadow-sm shadow-slate-100 transition-all duration-200 hover:-translate-y-0.5  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 active:scale-[0.99] cursor-pointer"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-gray-900 shrink-0" />
+                    <span className="h-2 w-2 rounded bg-gray-900 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[15px] text-gray-900 truncate leading-snug">
+                      <p className="truncate text-sm font-semibold text-slate-900 leading-snug">
                         {s.title}
                       </p>
-                      <p className="text-xs text-gray-300 mt-0.5">Tap to open</p>
                     </div>
                   </div>
-                  <span className="text-[11px] text-gray-400 shrink-0 ml-2">
+                  <span className="shrink-0 text-[11px] text-slate-400">
                     {formatDate(s.updatedAt)}
                   </span>
                 </button>
-                {idx < sessions.length - 1 && (
-                  <div className="border-t border-gray-50 mx-5" />
-                )}
               </li>
             ))}
           </ul>
@@ -208,11 +213,11 @@ export default function LandingScreen() {
 
       {/* Pagination */}
       {!loading && !error && sessions.length > 0 && (
-        <footer className="flex items-center justify-between px-5 pt-3 pb-8 border-t border-gray-100">
+        <footer className="flex items-center justify-between px-5 pt-3 pb-4 border-t border-gray-100">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="flex items-center gap-1.5 text-sm text-gray-900 disabled:opacity-25 transition-opacity active:scale-95"
+            className="flex items-center gap-1.5 text-sm text-gray-900 disabled:opacity-25 transition-opacity active:scale-95 cursor-pointer disabled:cursor-default"
           >
             <svg
               width="14" height="14" viewBox="0 0 14 14"
@@ -223,14 +228,14 @@ export default function LandingScreen() {
             Prev
           </button>
 
-          <span className="text-[11px] text-gray-300">
+          <span className="text-sm text-gray-600">
             {page} / {totalPages}
           </span>
 
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="flex items-center gap-1.5 text-sm text-gray-900 disabled:opacity-25 transition-opacity active:scale-95"
+            className="flex items-center gap-1.5 text-sm text-gray-900 disabled:opacity-25 transition-opacity active:scale-95 cursor-pointer disabled:cursor-default"
           >
             Next
             <svg

@@ -1,5 +1,5 @@
     // This URL must point to the public site
-const _URL = 'https://voice-note-ai-authenticator.web.app';
+const _URL = 'https://talkingtoeleven.com';
 const iframe = document.createElement('iframe');
 
 iframe.src = _URL;

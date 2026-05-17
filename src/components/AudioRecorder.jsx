@@ -1,23 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
-import AudioOrb from './AudioOrb';
+import AudioWaveBar from './AudioWaveBar';
 import axios from 'axios';
 import { getToken } from '../AuthGuard';
 
-const WaveBars = ({ color = '#111' }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 20 }}>
-    {[...Array(7)].map((_, i) => (
-      <div
-        key={i}
-        className="wave-bar"
-        style={{ width: 3, height: 3, background: color, borderRadius: 99, transformOrigin: 'center' }}
-      />
-    ))}
-  </div>
-);
-
 export default function AudioRecorder({ onFinishTranscription }) {
   const [isRecording, setIsRecording]       = useState(false);
-  const [isPaused, setIsPaused]             = useState(false);
   const [mode, setMode]                     = useState('idle');
   const [isTranscribing, setIsTranscribing] = useState(false);
 
@@ -25,7 +12,6 @@ export default function AudioRecorder({ onFinishTranscription }) {
   const mediaRecorderRef = useRef(null);
   const chunksRef        = useRef([]);
   const analyserRef      = useRef(null);
-  const audioRef         = useRef(null);
   const isDiscardedRef   = useRef(false);
 
   useEffect(() => () => stopTracks(), []);
@@ -51,7 +37,6 @@ export default function AudioRecorder({ onFinishTranscription }) {
 
   const startStream = async () => {
     try {
-      setIsPaused(false);
       isDiscardedRef.current = false;
       chunksRef.current = [];
 
@@ -61,13 +46,14 @@ export default function AudioRecorder({ onFinishTranscription }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      const recorder  = new MediaRecorder(stream);
+      const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
       const ac       = new AudioContext();
       const src      = ac.createMediaStreamSource(stream);
       const analyser = ac.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.75;
       src.connect(analyser);
       analyserRef.current = analyser;
 
@@ -79,25 +65,21 @@ export default function AudioRecorder({ onFinishTranscription }) {
 
       recorder.onstop = async () => {
         if (isDiscardedRef.current) { setIsTranscribing(false); return; }
-
         setIsTranscribing(true);
         const blob     = new Blob(chunksRef.current, { type: 'audio/webm' });
         const token    = await getToken();
         const formData = new FormData();
         formData.append('file', blob, `audio-${Date.now()}-${crypto.randomUUID()}.webm`);
-
         const { data } = await axios.post(
           'http://localhost:3000/api/transcribe',
           formData,
           { headers: { authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
         );
-
         setIsTranscribing(false);
         onFinishTranscription(data.transcription);
       };
 
       recorder.start(1000);
-      audioRef.current = stream;
       setIsRecording(true);
     } catch (err) {
       console.error('Start recording failed:', err);
@@ -105,193 +87,173 @@ export default function AudioRecorder({ onFinishTranscription }) {
   };
 
   const stopStream = () => {
-    setIsPaused(false);
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== 'inactive') recorder.stop();
     stopTracks();
-    audioRef.current    = null;
     analyserRef.current = null;
     setIsRecording(false);
     setMode('idle');
   };
 
-  const pauseRecording = () => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state === 'recording') { recorder.pause(); setIsPaused(true); }
+  const handleDiscard = () => {
+    isDiscardedRef.current = true;
+    stopStream();
   };
 
-  const resumeRecording = () => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state === 'paused') { recorder.resume(); setIsPaused(false); }
-  };
-
-  const handleDiscard = () => { isDiscardedRef.current = true; stopStream(); };
+  /* ─── shared icon colors ─── */
+  const DARK = '#2d2f36';
 
   return (
     <>
       <style>{`
-        @keyframes wb-pulse {
-          0%,100% { transform: scaleY(.3); opacity: .4; }
-          50%      { transform: scaleY(1);  opacity: 1; }
+        @keyframes ar-fade-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .wave-bar { animation: wb-pulse 1s ease-in-out infinite; }
-        .wave-bar:nth-child(1){ animation-delay: 0s }
-        .wave-bar:nth-child(2){ animation-delay: .08s }
-        .wave-bar:nth-child(3){ animation-delay: .16s }
-        .wave-bar:nth-child(4){ animation-delay: .24s }
-        .wave-bar:nth-child(5){ animation-delay: .16s }
-        .wave-bar:nth-child(6){ animation-delay: .08s }
-        .wave-bar:nth-child(7){ animation-delay: 0s }
-
-        @keyframes ts-in {
-          from { opacity:0; transform: scale(.92); }
-          to   { opacity:1; transform: scale(1); }
+        @keyframes ar-scale-in {
+          from { opacity: 0; transform: scale(.82); }
+          to   { opacity: 1; transform: scale(1); }
         }
-        .ts-panel { animation: ts-in .22s ease both; }
+        @keyframes ts-pulse {
+          0%,100% { opacity: .4; } 50% { opacity: 1; }
+        }
 
-        .ar-btn {
+        .ar-root {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          padding: 24px 16px 20px;
+          box-sizing: border-box;
+          min-height: 140px;
+        }
+
+        /* corner buttons */
+        .ar-corner {
+          position: absolute;
+          top: 12px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
+          background: #ebebeb;
+          transition: background .15s, transform .12s;
+          animation: ar-scale-in .2s ease both;
+        }
+        .ar-corner:hover  { background: #ddd; transform: scale(1.08); }
+        .ar-corner:active { transform: scale(.92); }
+        .ar-corner.left  { left: 12px; }
+        .ar-corner.right { right: 12px; background: ${DARK}; }
+        .ar-corner.right:hover { background: #444; }
+
+        /* mic start button */
+        .ar-mic-btn {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          border: none;
+          background: ${DARK};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform .12s, background .15s;
+          animation: ar-scale-in .22s ease both;
           flex-shrink: 0;
-          transition: transform .12s, background .12s, opacity .2s, border-color .12s;
         }
-        .ar-btn:hover  { transform: scale(1.08); }
-        .ar-btn:active { transform: scale(.91); }
-        .ar-btn.ar-gone {
-          opacity: 0;
-          pointer-events: none;
-          transform: scale(.78);
+        .ar-mic-btn:hover  { background: #444; transform: scale(1.07); }
+        .ar-mic-btn:active { transform: scale(.91); }
+
+        /* wave + label area */
+        .ar-wave-area {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          animation: ar-fade-in .25s ease both;
         }
+
+        .ar-label {
+          font-size: 12px;
+          color: #888;
+          letter-spacing: .4px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        /* transcribing dots */
+        .ts-dot {
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: #888;
+          animation: ts-pulse 1.2s ease-in-out infinite;
+        }
+        .ts-dot:nth-child(2) { animation-delay: .2s; }
+        .ts-dot:nth-child(3) { animation-delay: .4s; }
       `}</style>
 
-      {isTranscribing ? (
-        /* ── Full transcribing replacement — no orb, no controls ── */
-        <div className="ts-panel" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          padding: '8px 0 2px',
-          width: '100%',
-        }}>
-          {/* Wave bars centered in a dark pill */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 12,
-            background: '#111',
-            borderRadius: 99,
-            padding: '14px 28px',
-          }}>
-            <WaveBars color="#fff" />
-          </div>
-          <span style={{
-            fontSize: 11,
-            fontFamily: 'DM Mono, monospace',
-            color: '#bbb',
-            letterSpacing: '.6px',
-            textTransform: 'uppercase',
-          }}>
-            Transcribing…
-          </span>
-        </div>
-      ) : (
-        /* ── Normal: orb + controls ── */
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-          padding: '8px 0 2px',
-          width: '100%',
-        }}>
+      <div className="ar-root">
 
-          {/* Orb — display only, never clickable */}
-          <div style={{ pointerEvents: 'none', userSelect: 'none' }}>
-            <AudioOrb
-              size={72}
-              mode={mode}
-              analyserNode={analyserRef.current}
-              showControls={false}
-              isPaused={isPaused}
-            />
+        {isTranscribing ? (
+          /* ── Transcribing state ── */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <div className="ts-dot" />
+              <div className="ts-dot" />
+              <div className="ts-dot" />
+            </div>
+            <span className="ar-label">Transcribing…</span>
           </div>
 
-          {/* Controls: discard | start/pause/resume | proceed */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 18,
-          }}>
-
-            {/* Discard */}
-            <button
-              className={`ar-btn${isRecording ? '' : ' ar-gone'}`}
-              onClick={handleDiscard}
-              title="Discard"
-              style={{
-                width: 40, height: 40,
-                background: '#f5f5f2',
-                border: '1.5px solid #e4e4e0',
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 18 18" fill="none">
-                <line x1="3" y1="3" x2="15" y2="15" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="15" y1="3" x2="3" y2="15" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
+        ) : isRecording ? (
+          /* ── Recording state: X | wave+label | ✓ ── */
+          <>
+            {/* Discard — top left */}
+            <button className="ar-corner left" onClick={handleDiscard} title="Discard">
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                <line x1="2" y1="2" x2="12" y2="12" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="12" y1="2" x2="2"  y2="12" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
 
-            {/* Start / Pause / Resume */}
-            {!isRecording ? (
-              <button
-                className="ar-btn"
-                onClick={startStream}
-                title="Start recording"
-                style={{ width: 52, height: 52, background: '#fff', border: '2px solid #ef4444' }}
-              >
-                <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#ef4444', display: 'block' }} />
-              </button>
-            ) : (
-              <button
-                className="ar-btn"
-                onClick={isPaused ? resumeRecording : pauseRecording}
-                title={isPaused ? 'Resume' : 'Pause'}
-                style={{ width: 52, height: 52, background: '#fff', border: '2px solid #ef4444' }}
-              >
-                {isPaused ? (
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                    <path d="M5 3L17 10L5 17V3Z" fill="#ef4444"/>
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                    <rect x="4"  y="3" width="4" height="14" rx="2" fill="#ef4444"/>
-                    <rect x="12" y="3" width="4" height="14" rx="2" fill="#ef4444"/>
-                  </svg>
-                )}
-              </button>
-            )}
+            {/* Wave bar + Listening label — center */}
+            <div className="ar-wave-area">
+              <AudioWaveBar
+                width={200}
+                height={52}
+                mode={mode}
+                analyserNode={analyserRef.current}
+                isPaused={false}
+              />
+              <span className="ar-label">Listening</span>
+            </div>
 
-            {/* Proceed / Send */}
-            <button
-              className={`ar-btn${isRecording ? '' : ' ar-gone'}`}
-              onClick={stopStream}
-              title="Done"
-              style={{ width: 40, height: 40, background: '#111', border: 'none' }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            {/* Done — top right */}
+            <button className="ar-corner right" onClick={stopStream} title="Done">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8.5L6.5 12L13 4.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+          </>
 
-          </div>
-        </div>
-      )}
+        ) : (
+          /* ── Idle state: just the mic button ── */
+          <button className="ar-mic-btn" onClick={startStream} title="Start recording">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="2" width="6" height="12" rx="3" fill="#fff"/>
+              <path d="M5 11a7 7 0 0 0 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+              <line x1="12" y1="18" x2="12" y2="22" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="9"  y1="22" x2="15" y2="22" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
+
+      </div>
     </>
   );
 }

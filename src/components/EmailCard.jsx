@@ -4,15 +4,17 @@ import { useState, useEffect, useRef } from "react";
 // ─── Cursor ───────────────────────────────────────────────────────────────────
 const Cursor = () => (
   <span
-    className="cursor-blink"
-    style={{
-      display: 'inline-block', width: 2, height: '1em',
-      background: '#333', marginLeft: 2,
-      verticalAlign: 'text-bottom', borderRadius: 1,
-    }}
+    className="
+      inline-block
+      w-2
+      h-2
+      ml-1
+      rounded-full
+      bg-gray-900
+      animate-[blink_1s_infinite]
+    "
   />
 );
-
 
 export default function EmailCard({ subject, body, streaming }){
 
@@ -91,7 +93,11 @@ export default function EmailCard({ subject, body, streaming }){
 
             const { subject: s, body: b } = data;
 
-            const normalize = (t) => t.replace(/\n/g, '<div><br></div>');
+            const normalize = (text) =>
+                text
+                  .split('\n')
+                  .map(line => `<div>${line || '<br>'}</div>`)
+                  .join('');
 
             // ── ALWAYS resolve fields globally ───────────────────────────
             const subjectEl =
@@ -303,8 +309,7 @@ export default function EmailCard({ subject, body, streaming }){
                 }}
               />
             : <div style={{ fontSize: 14, color: '#111', fontWeight: 700, lineHeight: 1.4, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                {editSubject || <span style={{ color: '#e0e0dc' }}>—</span>}
-                {streaming && !editSubject && <Cursor />}
+                {editSubject || <> <span style={{ color: '#e0e0dc' }}>—</span> <Cursor /> </>}
               </div>
           }
         </div>
@@ -328,8 +333,7 @@ export default function EmailCard({ subject, body, streaming }){
                 }}
               />
             : <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8, fontFamily: 'DM Mono, monospace', whiteSpace: 'pre-wrap' }}>
-                {editBody || <span style={{ color: '#e0e0dc' }}>Composing…</span>}
-                {streaming && <Cursor />}
+                {editBody || <> <span style={{ color: '#101828' }}>Composing…</span> <Cursor /> </>}
               </div>
           }
         </div>
