@@ -258,7 +258,7 @@ export default function EmailCard({ subject, body, streaming }){
           <rect x="2" y="4" width="20" height="16" rx="2"/>
           <polyline points="2,4 12,13 22,4"/>
         </svg>
-        <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', flex: 1 }}>
+        <span className="text-gray-700" style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', flex: 1 }}>
           Draft Email
         </span>
  
@@ -296,7 +296,7 @@ export default function EmailCard({ subject, body, streaming }){
       <div style={{ padding: '12px 13px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* Subject */}
         <div>
-          <div style={{ fontSize: 10, color: '#ccc', fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 3 }}>Subject</div>
+          <div className="text-gray-700" style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 3 }}>Subject</div>
           {isEditing
             ? <input
                 value={editSubject}
@@ -318,7 +318,7 @@ export default function EmailCard({ subject, body, streaming }){
  
         {/* Body */}
         <div>
-          <div style={{ fontSize: 10, color: '#ccc', fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Message</div>
+          <div className="text-gray-700" style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Message</div>
           {isEditing
             ? <textarea
                 ref={textareaRef}

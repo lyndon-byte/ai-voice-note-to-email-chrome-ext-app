@@ -193,7 +193,12 @@ export default function ChatBox({ chatId, initialMessages, token }) {
   }, [messages]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+     requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      });
+    });
   }, [messages, isStreaming, emailMap]);
 
   useEffect(() => {
