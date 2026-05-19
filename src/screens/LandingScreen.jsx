@@ -1,20 +1,22 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { getToken, getCurrentUser } from "../AuthGuard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { generateId } from "ai";
 
 export default function LandingScreen() {
 
+  const navigate = useNavigate()
+  const user = getCurrentUser();
+  const location = useLocation()
+
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(null);
+  const [page, setPage] = useState(location.state?.page ?? null);
   const [totalPages, setTotalPages] = useState(null);
 
-  const navigate = useNavigate()
-  const user = getCurrentUser();
-
+ 
   useEffect(() => {
 
     fetchChats(page);
@@ -60,15 +62,7 @@ export default function LandingScreen() {
 
     try {
 
-      const token = await getToken()
-
-      const { data } = await axios.get(
-        `http://localhost:3000/api/messages?chatId=${chatId}`,
-        { headers: { Authorization: `Bearer ${token}`} 
-      }
-      );
-
-      navigate('/email', { state: { chatId } });
+      navigate('/email', { state: { chatId, previousPage: page } });
 
     } catch (err) {
       console.error("Failed to fetch messages for chatId:", chatId, err);
@@ -136,8 +130,8 @@ export default function LandingScreen() {
       <div className="border-t border-gray-200 mx-5" />
 
       {/* Body */}
-      <main className="flex-1 pt-3">
-        <p className="text-[10px] uppercase tracking-widest text-gray-700 px-5 mb-2">
+      <main className="flex-1 pt-8">
+        <p className="text-[10px] uppercase tracking-widest text-gray-700 px-5 mb-4">
           Recents 
         </p>
 

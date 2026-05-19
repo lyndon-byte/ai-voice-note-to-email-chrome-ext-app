@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, generateId } from 'ai';
 import { parse } from 'partial-json';
 import EmailCard from './EmailCard';
 import ChatBubble from './ChatBubble';
@@ -15,21 +15,26 @@ const ThinkingDots = () => (
   </div>
 );
 
-export default function ChatBox({ chatId, initialMessages, token }) {
+export default function ChatBox({ chatId, initialMessages,token,handleNewSession }) {
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [emailMap, setEmailMap]       = useState({});
   const [inputText, setInputText]     = useState('');
+  const [showError, setShowError]     = useState(false);
 
-  const bottomRef   = useRef(null);
-  const textareaRef = useRef(null);
+  const bottomRef     = useRef(null);
+  const textareaRef   = useRef(null);
+  const errorTimerRef = useRef(null);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: 'http://localhost:3000/api/generate-email',
     }),
   });
+
+  const MAX_SESSION_MESSAGES = 25;
+  const sessionTooLong = messages.length >= MAX_SESSION_MESSAGES;
 
  const insertIntoGmailStream = async (subjectText, bodyText, isDone = false) => {
   
@@ -208,6 +213,30 @@ export default function ChatBox({ chatId, initialMessages, token }) {
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   }, [inputText]);
 
+  useEffect(() => {
+    if (!error) {
+      setShowError(false);
+      return;
+    }
+
+    setShowError(true);
+    if (errorTimerRef.current) {
+      window.clearTimeout(errorTimerRef.current);
+    }
+
+    errorTimerRef.current = window.setTimeout(() => {
+      setShowError(false);
+      errorTimerRef.current = null;
+    }, 4200);
+
+    return () => {
+      if (errorTimerRef.current) {
+        window.clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+    };
+  }, [error]);
+
   const handleSend = (text) => {
     const t = text.trim();
     if (!t) return;
@@ -221,11 +250,42 @@ export default function ChatBox({ chatId, initialMessages, token }) {
     setInputText('');
   };
 
+
+
   const lastAiMsg = messages.filter(m => m.role === 'assistant').at(-1);
   const isEmpty   = messages.length === 0 && status !== 'submitted';
 
   return (
+
     <>
+      {error && showError ? (
+
+        <div 
+          className='bg-red-700 text-white rounded-md'
+          style={{
+            position: 'fixed',
+            top: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: 280,
+            maxWidth: 520,
+            padding: '12px 16px',
+            boxShadow: '0 18px 40px rgba(0,0,0,.24)',
+            opacity: showError ? 1 : 0,
+            transition: 'opacity .26s ease, transform .26s ease',
+            transform: showError ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(-10px)',
+            pointerEvents: 'none',
+            textAlign: 'center',
+            fontSize: 14,
+            lineHeight: 1.4,
+          }}
+        >
+          {error.message || 'Something went wrong. Please try again.'}
+        </div>
+
+      ) : null}
+
       {isEmpty ? (
         <ChatBoxEmptyPlaceholder />
       ) : (
@@ -238,6 +298,8 @@ export default function ChatBox({ chatId, initialMessages, token }) {
           gap: 11,
           WebkitOverflowScrolling: 'touch',
         }}>
+
+
           <div style={{ maxWidth: 640, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 11 }}>
 
             {messages.map((msg) => {
@@ -293,21 +355,56 @@ export default function ChatBox({ chatId, initialMessages, token }) {
           gap: 7,
         }}>
           
-           <AudioRecorder
+        
+          { sessionTooLong ? (
+            
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '30px 20px',
+                minHeight: '100%',
+              }}>
+                <div style={{ maxWidth: 520, textAlign: 'center' }}>
+                  <p className='text-gray-700' style={{ marginBottom: 22, lineHeight: 1.6 }}>
+                    This session has reached the maximum number of messages.
+                    Create a new session to continue with a fresh email draft.
+                  </p>
+                  <button
+                    onClick={() => {
+                       
+                      const id = generateId()
+                      handleNewSession(id)
 
-              onFinishTranscription={(transcription) => handleSend(transcription) }
+                    }}
+                    style={{
+                      border: 'none',
+                      borderRadius: 999,
+                      padding: '12px 18px',
+                      background: '#111',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Create new session
+                  </button>
 
-          />
+                </div>
+              </div>
+            
+          ):(
 
-          <div style={{
-            textAlign: 'center',
-            fontSize: 10,
-            color: '#ccc',
-            fontFamily: 'DM Mono, monospace',
-            letterSpacing: 0.4,
-          }}>
-            Talking to Eleven 
-          </div>
+              <AudioRecorder
+
+                 onFinishTranscription={(transcription) => handleSend(transcription) }
+                 isDisabled={['submitted', 'streaming'].includes(status)}
+
+              />
+
+          )}
+                
         </div>
       </div>
     </>

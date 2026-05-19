@@ -3,7 +3,7 @@ import AudioWaveBar from './AudioWaveBar';
 import axios from 'axios';
 import { getToken } from '../AuthGuard';
 
-export default function AudioRecorder({ onFinishTranscription }) {
+export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
   const [isRecording, setIsRecording]       = useState(false);
   const [mode, setMode]                     = useState('idle');
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -169,6 +169,7 @@ export default function AudioRecorder({ onFinishTranscription }) {
         }
         .ar-mic-btn:hover  { background: #444; transform: scale(1.07); }
         .ar-mic-btn:active { transform: scale(.91); }
+        .ar-mic-btn:disabled { cursor: default; background: #9a9ca4; }
 
         /* wave + label area */
         .ar-wave-area {
@@ -243,7 +244,12 @@ export default function AudioRecorder({ onFinishTranscription }) {
 
         ) : (
           /* ── Idle state: just the mic button ── */
-          <button className="ar-mic-btn" onClick={startStream} title="Start recording">
+          <button 
+            className="ar-mic-btn" 
+            onClick={startStream} 
+            title="Start recording"
+            disabled={isDisabled}
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <rect x="9" y="2" width="6" height="12" rx="3" fill="#fff"/>
               <path d="M5 11a7 7 0 0 0 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" fill="none"/>

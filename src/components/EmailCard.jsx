@@ -333,7 +333,7 @@ export default function EmailCard({ subject, body, streaming }){
                 }}
               />
             : <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8, fontFamily: 'DM Mono, monospace', whiteSpace: 'pre-wrap' }}>
-                {editBody || <> <span style={{ color: '#101828' }}>Composing…</span> <Cursor /> </>}
+                {editBody || <><span style={{ color: '#101828' }}>Composing…</span> <Cursor /></>}
               </div>
           }
         </div>

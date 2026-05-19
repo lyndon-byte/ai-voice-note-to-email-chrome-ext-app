@@ -78,13 +78,15 @@ const globalStyles = `
 
 export default function EmailScreen() {
 
+  const location = useLocation(); 
+  const navigate = useNavigate();
+
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authToken, setAuthToken]  = useState(null);
+  const [chatId,setChatId] = useState(location.state?.chatId) 
 
-  const location = useLocation();
-  const chatId = location.state?.chatId;
-  const navigate = useNavigate();
+  const previousPage = location.state?.previousPage ?? null;
 
   useEffect(() => {
     
@@ -98,19 +100,21 @@ export default function EmailScreen() {
         const { data } = await axios.get(`http://localhost:3000/api/messages?chatId=${chatId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setInitialData(data); // Set the array of messages
+        setInitialData(data);
+
       } finally {
+
         setLoading(false);
+        
       }
     }
     loadData();
-  }, [chatId]);
 
+  }, [chatId]);
 
 
   if (loading) return <Loader color='bg-gray-900'/>;
 
- 
   return (
     <>
       <style>{globalStyles}</style>
@@ -139,7 +143,7 @@ export default function EmailScreen() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Back button */}
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/',{state: { page: previousPage }})}
               style={{
                 width: 34, height: 34, borderRadius: '50%',
                 background: '#f0f0ec', border: '1px solid #e4e4e0',
@@ -181,6 +185,12 @@ export default function EmailScreen() {
           chatId={chatId} 
           initialMessages={initialData} 
           token={authToken} 
+          handleNewSession={(id) => { 
+
+            setLoading(true)
+            setChatId(id)
+          
+          }}
         />
         
       </div>
