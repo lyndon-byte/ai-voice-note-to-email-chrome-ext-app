@@ -169,7 +169,7 @@ export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
         }
         .ar-mic-btn:hover  { background: #444; transform: scale(1.07); }
         .ar-mic-btn:active { transform: scale(.91); }
-        .ar-mic-btn:disabled { cursor: default; background: #9a9ca4; }
+        .ar-mic-btn:disabled { cursor: default; background: #d1d5dc; }
 
         /* wave + label area */
         .ar-wave-area {

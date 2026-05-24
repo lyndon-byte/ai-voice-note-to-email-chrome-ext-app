@@ -6,6 +6,7 @@ import LandingScreen from './screens/LandingScreen'
 import SignInScreen from './screens/SignInScreen'
 import EmailScreen from './screens/EmailScreen'
 import AuthGuard from './AuthGuard'
+import PayScreen from './screens/PayScreen'
 
 const router = createHashRouter([
  
@@ -17,7 +18,7 @@ const router = createHashRouter([
     path: "/",
     element: (
       <AuthGuard> 
-        <LandingScreen />
+        <PayScreen />
       </AuthGuard>
     ),
   },
