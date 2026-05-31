@@ -1,19 +1,25 @@
 import { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AudioWaveBar from './AudioWaveBar';
 import axios from 'axios';
 import { getToken } from '../AuthGuard';
 
+const UPGRADE_ERROR_CODES = new Set(['FREE_TIER_LIMIT_REACHED', 'SUBSCRIPTION_INACTIVE']);
+
 export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
+
+  const navigate = useNavigate();
   const [isRecording, setIsRecording]       = useState(false);
   const [mode, setMode]                     = useState('idle');
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState(null);
 
   const streamRef        = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef        = useRef([]);
   const analyserRef      = useRef(null);
   const isDiscardedRef   = useRef(false);
-
+  
   useEffect(() => () => stopTracks(), []);
 
   const stopTracks = () => {
@@ -70,13 +76,24 @@ export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
         const token    = await getToken();
         const formData = new FormData();
         formData.append('file', blob, `audio-${Date.now()}-${crypto.randomUUID()}.webm`);
-        const { data } = await axios.post(
-          'http://localhost:3000/api/transcribe',
-          formData,
-          { headers: { authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-        );
-        setIsTranscribing(false);
-        onFinishTranscription(data.transcription);
+        try {
+          const { data } = await axios.post(
+            'http://localhost:3000/api/transcribe',
+            formData,
+            { headers: { authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+          );
+          setIsTranscribing(false);
+          onFinishTranscription(data.transcription);
+        } catch (err) {
+          setIsTranscribing(false);
+          setIsRecording(false);
+          setMode('idle');
+          const apiError = err.response?.data;
+          setSubscriptionError({
+            error_code: apiError?.error_code ?? 'UNKNOWN_ERROR',
+            message: apiError?.message ?? 'Something went wrong. Please try again.',
+          });
+        }
       };
 
       recorder.start(1000);
@@ -197,6 +214,105 @@ export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
         .ts-dot:nth-child(2) { animation-delay: .2s; }
         .ts-dot:nth-child(3) { animation-delay: .4s; }
       `}</style>
+
+      {subscriptionError && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box',
+            background: 'rgba(0,0,0,0.55)',
+            animation: 'ar-fade-in .2s ease both',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 360,
+              background: '#18181b',
+              borderRadius: 14,
+              boxShadow: '0 24px 48px rgba(0,0,0,.45)',
+              textAlign: 'center',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Purple accent bar */}
+            <div style={{ height: 4, background: 'linear-gradient(90deg,#7c3aed,#a855f7)' }} />
+
+            <div style={{ padding: '20px 20px 20px' }}>
+              {/* Icon */}
+              <div style={{
+                width: 42, height: 42,
+                borderRadius: '50%',
+                background: 'rgba(168,85,247,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 12px',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                    fill="#a855f7" stroke="#a855f7" strokeWidth="1.5" strokeLinejoin="round"/>
+                </svg>
+              </div>
+
+              {/* Message */}
+              <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                {UPGRADE_ERROR_CODES.has(subscriptionError.error_code)
+                  ? 'Unlock unlimited emails'
+                  : 'Something went wrong'}
+              </p>
+              <p style={{ margin: '0 0 20px', fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+                {subscriptionError.message}
+              </p>
+
+              {/* Upgrade CTA — only for subscription-related errors */}
+              {UPGRADE_ERROR_CODES.has(subscriptionError.error_code) && (
+                <button
+                  onClick={() => { setSubscriptionError(null); navigate('/pay'); }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '11px 0',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    letterSpacing: 0.4,
+                    cursor: 'pointer',
+                    marginBottom: 10,
+                    boxShadow: '0 4px 18px rgba(168,85,247,0.45)',
+                  }}
+                >
+                  Upgrade to Pro
+                </button>
+              )}
+
+              {/* Dismiss */}
+              <button
+                onClick={() => setSubscriptionError(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#71717a',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  padding: '4px 0',
+                  width: '100%',
+                }}
+              >
+                {UPGRADE_ERROR_CODES.has(subscriptionError.error_code) ? 'Maybe later' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="ar-root">
 

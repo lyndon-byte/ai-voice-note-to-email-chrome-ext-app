@@ -5,11 +5,12 @@ import './index.css'
 import LandingScreen from './screens/LandingScreen'
 import SignInScreen from './screens/SignInScreen'
 import EmailScreen from './screens/EmailScreen'
-import AuthGuard from './AuthGuard'
 import PayScreen from './screens/PayScreen'
+import CheckOutScreen from './screens/CheckOutScreen'
+import AuthGuard from './AuthGuard'
 
 const router = createHashRouter([
- 
+
   {
     path: "/sign-in",
     element: <SignInScreen />,
@@ -17,16 +18,32 @@ const router = createHashRouter([
   {
     path: "/",
     element: (
-      <AuthGuard> 
-        <PayScreen />
+      <AuthGuard>
+        <LandingScreen />
       </AuthGuard>
     ),
   },
   {
     path: "/email",
     element: (
-      <AuthGuard> 
+      <AuthGuard>
         <EmailScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/pay",
+    element: (
+      <AuthGuard>
+        <PayScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/checkout",
+    element: (
+      <AuthGuard>
+        <CheckOutScreen />
       </AuthGuard>
     ),
   }

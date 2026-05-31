@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import ChatBox from '../components/ChatBox';
 import { Loader } from '../components/Loader';
 import axios from 'axios';
-import { getToken } from '../AuthGuard';
+import { getToken,getCurrentUser } from '../AuthGuard';
+
 // ─── Global styles ────────────────────────────────────────────────────────────
 const globalStyles = `
 
@@ -84,9 +85,14 @@ export default function EmailScreen() {
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authToken, setAuthToken]  = useState(null);
-  const [chatId,setChatId] = useState(location.state?.chatId) 
+  const [chatId,setChatId] = useState(location.state?.chatId)
+  const [isPro, setIsPro] = useState(false);
+  const [subscriptionId,setSubscriptionId] = useState(null)
+
 
   const previousPage = location.state?.previousPage ?? null;
+
+  const user = getCurrentUser();
 
   useEffect(() => {
     
@@ -112,6 +118,21 @@ export default function EmailScreen() {
 
   }, [chatId]);
 
+
+  useEffect(() => {
+
+    async function checkSubscription() {
+      const token = await getToken();
+      const { data } = await axios.get(`http://localhost:3000/api/subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsPro(data?.data?.status === 'active');
+      setSubscriptionId(data?.data?.subscriptionId)
+    }
+
+    checkSubscription();
+
+  }, [])
 
   if (loading) return <Loader color='bg-gray-900'/>;
 
@@ -162,23 +183,49 @@ export default function EmailScreen() {
               <div style={{ fontSize: 15, fontWeight: 700, color: '#111', lineHeight: 1.2, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
                 Mail Composer
               </div>
-              <div style={{ fontSize: 10, color: '#bbb', fontFamily: 'DM Mono, monospace', letterSpacing: 0.4, marginTop: 1 }}>
-                Ready
+              <div 
+               className='text-gray-800'
+               style={{ fontSize: 10,fontFamily: 'DM Mono, monospace', letterSpacing: 0.4, marginTop: 1 }}>
+                {isPro ? 'Pro plan' : 'Free plan'}
               </div>
             </div>
           </div>
  
-          <div style={{
-            padding: '4px 11px', borderRadius: 99,
-            background: '#f0f0ec',
-            border: '1px solid #e0e0dc',
-            fontSize: 10, fontFamily: 'DM Mono, monospace',
-            color: '#aaa',
-            letterSpacing: 0.8, textTransform: 'uppercase',
-            transition: 'all 0.25s',
-          }}>
-            Ready
-          </div>
+          <button
+            onClick={() => {
+              if (isPro) {
+                navigate('/pay', { state: { subscriptionId } });
+              } else {
+                navigate('/checkout');
+              }
+            }}
+            style={{
+              padding: '4px 11px',
+              borderRadius: 99,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontFamily: 'DM Mono, monospace',
+              letterSpacing: 0.8,
+              textTransform: 'uppercase',
+              transition: 'opacity .15s, transform .12s',
+              ...(isPro
+                ? {
+                    background: '#111',
+                    color: '#fff',
+                  }
+                : {
+                    background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                    color: '#fff',
+                  }),
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.82'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.93)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            {isPro ? 'Pro' : 'Upgrade to Pro'}
+          </button>
         </header>
 
         <ChatBox 
