@@ -246,20 +246,7 @@ export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
             <div style={{ height: 4, background: 'linear-gradient(90deg,#7c3aed,#a855f7)' }} />
 
             <div style={{ padding: '20px 20px 20px' }}>
-              {/* Icon */}
-              <div style={{
-                width: 42, height: 42,
-                borderRadius: '50%',
-                background: 'rgba(168,85,247,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 12px',
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                    fill="#a855f7" stroke="#a855f7" strokeWidth="1.5" strokeLinejoin="round"/>
-                </svg>
-              </div>
-
+            
               {/* Message */}
               <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
                 {UPGRADE_ERROR_CODES.has(subscriptionError.error_code)
@@ -273,7 +260,7 @@ export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
               {/* Upgrade CTA — only for subscription-related errors */}
               {UPGRADE_ERROR_CODES.has(subscriptionError.error_code) && (
                 <button
-                  onClick={() => { setSubscriptionError(null); navigate('/pay'); }}
+                  onClick={() => { setSubscriptionError(null); navigate('/checkout'); }}
                   style={{
                     display: 'block',
                     width: '100%',
