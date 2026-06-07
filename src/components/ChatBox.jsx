@@ -18,7 +18,6 @@ const ThinkingDots = () => (
 export default function ChatBox({ chatId, initialMessages,token,handleNewSession }) {
 
   const [isStreaming, setIsStreaming] = useState(false);
-  const [emailMap, setEmailMap]       = useState({});
   const [inputText, setInputText]     = useState('');
   const [showError, setShowError]     = useState(false);
 
@@ -185,22 +184,17 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
     const done = fullText.trimEnd().endsWith('}');
     setIsStreaming(!done);
 
-    // Register this message as the active stream when its first token arrives
     if (!done) activeStreamIdRef.current = last.id;
 
     try {
       const parsed  = parse(fullText);
       const subject = parsed?.emailMessage?.emailSubject || '';
       const body    = parsed?.emailMessage?.emailBody    || '';
-      setEmailMap(prev => ({ ...prev, [last.id]: { subject, body, done } }));
 
-      // Only inject into Gmail for the actively streaming message.
-      // Old completed messages re-triggered by messages updates are skipped.
       const isActiveStream = !done || activeStreamIdRef.current === last.id;
       if (isActiveStream && (subject || body)) {
         insertIntoGmailStream(subject, body, done);
       }
-
     } catch { /* partial — keep waiting */ }
   }, [messages]);
 
@@ -211,7 +205,7 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
         block: 'end',
       });
     });
-  }, [messages, isStreaming, emailMap]);
+  }, [messages, isStreaming]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -311,19 +305,25 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
 
           <div style={{ maxWidth: 640, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 11 }}>
 
-            {messages.map((msg) => {
+            {messages.map((msg, idx) => {
               if (msg.role === 'user') {
                 const text = msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || '';
-                return <ChatBubble key={msg.id} role="user">{text}</ChatBubble>;
+                return <ChatBubble key={msg.id ?? idx} role="user">{text}</ChatBubble>;
               }
 
               if (msg.role === 'assistant') {
                 const isLast    = msg === lastAiMsg;
                 const streaming = isLast && isStreaming;
-                const data      = emailMap[msg.id] || { subject: '', body: '' };
+                const fullText  = msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || '';
+                let subject = '', body = '';
+                try {
+                  const parsed = parse(fullText);
+                  subject = parsed?.emailMessage?.emailSubject || '';
+                  body    = parsed?.emailMessage?.emailBody    || '';
+                } catch {}
                 return (
-                  <ChatBubble key={msg.id} role="ai" naked>
-                    <EmailCard subject={data.subject} body={data.body} streaming={streaming} />
+                  <ChatBubble key={msg.id ?? idx} role="ai" naked>
+                    <EmailCard subject={subject} body={body} streaming={streaming} />
                   </ChatBubble>
                 );
               }
