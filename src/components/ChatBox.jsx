@@ -22,9 +22,10 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
   const [inputText, setInputText]     = useState('');
   const [showError, setShowError]     = useState(false);
 
-  const bottomRef     = useRef(null);
-  const textareaRef   = useRef(null);
-  const errorTimerRef = useRef(null);
+  const bottomRef            = useRef(null);
+  const textareaRef          = useRef(null);
+  const errorTimerRef        = useRef(null);
+  const activeStreamIdRef    = useRef(null);
 
   const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
@@ -184,13 +185,19 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
     const done = fullText.trimEnd().endsWith('}');
     setIsStreaming(!done);
 
+    // Register this message as the active stream when its first token arrives
+    if (!done) activeStreamIdRef.current = last.id;
+
     try {
       const parsed  = parse(fullText);
       const subject = parsed?.emailMessage?.emailSubject || '';
       const body    = parsed?.emailMessage?.emailBody    || '';
       setEmailMap(prev => ({ ...prev, [last.id]: { subject, body, done } }));
 
-      if (subject || body) {
+      // Only inject into Gmail for the actively streaming message.
+      // Old completed messages re-triggered by messages updates are skipped.
+      const isActiveStream = !done || activeStreamIdRef.current === last.id;
+      if (isActiveStream && (subject || body)) {
         insertIntoGmailStream(subject, body, done);
       }
 
@@ -240,6 +247,8 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
   const handleSend = (text) => {
     const t = text.trim();
     if (!t) return;
+    activeStreamIdRef.current = null;
+    insertIntoGmailStream('', '', false);
     sendMessage(
       { text: t },
       {

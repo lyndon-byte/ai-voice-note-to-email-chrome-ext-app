@@ -199,7 +199,7 @@ export default function PayScreen() {
           zIndex: 10,
         }}>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/')}
             style={{
               width: 34, height: 34, borderRadius: '50%',
               background: '#f0f0ec', border: '1px solid #e4e4e0',
