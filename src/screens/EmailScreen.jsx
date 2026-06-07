@@ -4,6 +4,7 @@ import ChatBox from '../components/ChatBox';
 import { Loader } from '../components/Loader';
 import axios from 'axios';
 import { getToken,getCurrentUser } from '../AuthGuard';
+import { API_BASE_URL } from '../config/api';
 
 // ─── Global styles ────────────────────────────────────────────────────────────
 const globalStyles = `
@@ -103,7 +104,7 @@ export default function EmailScreen() {
         const token = await getToken();
         setAuthToken(token)
 
-        const { data } = await axios.get(`http://localhost:3000/api/messages?chatId=${chatId}`, {
+        const { data } = await axios.get(`${API_BASE_URL}/api/messages?chatId=${chatId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setInitialData(data);
@@ -123,7 +124,7 @@ export default function EmailScreen() {
 
     async function checkSubscription() {
       const token = await getToken();
-      const { data } = await axios.get(`http://localhost:3000/api/subscriptions`, {
+      const { data } = await axios.get(`${API_BASE_URL}/api/subscriptions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsPro(data?.data?.status === 'active');

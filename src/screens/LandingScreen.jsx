@@ -3,6 +3,7 @@ import axios from "axios";
 import { getToken, getCurrentUser } from "../AuthGuard";
 import { useNavigate, useLocation } from "react-router-dom";
 import { generateId } from "ai";
+import { API_BASE_URL } from "../config/api";
 
 export default function LandingScreen() {
 
@@ -31,7 +32,7 @@ export default function LandingScreen() {
     const token = await getToken();
 
     try {
-      const { data } = await axios.get("http://localhost:3000/api/chats", {
+      const { data } = await axios.get(`${API_BASE_URL}/api/chats`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { page },
       });
@@ -165,7 +166,7 @@ export default function LandingScreen() {
           <div className="flex flex-col items-center gap-2 pt-16 px-5">
             <svg
               width="38" height="38" viewBox="0 0 38 38"
-              fill="none" stroke="#d1d5db" strokeWidth="1.4"
+              fill="none" stroke="#6a7282" strokeWidth="1.4"
               className="mb-2"
             >
               <rect x="5" y="7" width="28" height="24" rx="4" />
@@ -173,7 +174,7 @@ export default function LandingScreen() {
               <line x1="11" y1="21" x2="21" y2="21" />
             </svg>
             <p className="text-base text-gray-500">No sessions yet</p>
-            <p className="text-xs text-gray-300">Tap + to start a new one</p>
+            <p className="text-xs text-gray-500">Tap + to start a new one</p>
           </div>
         )}
 

@@ -3,6 +3,7 @@ import Pusher from 'pusher-js';
 import { getCurrentUser, getToken } from '../AuthGuard';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 const CARD_BRAND_LABEL = {
   visa:       'Visa',
@@ -68,7 +69,7 @@ export default function PayScreen() {
   useEffect(() => {
     const pusher  = new Pusher('8cbe830be300102d4937', {
       cluster:      'us2',
-      authEndpoint: 'http://localhost:3000/pusher/auth',
+      authEndpoint: `${API_BASE_URL}/pusher/auth`,
     });
     const channel = pusher.subscribe(`private-user-${user.uid}`);
     channel.bind('subscription-cancel', () => {
@@ -86,7 +87,7 @@ export default function PayScreen() {
       try {
         const token      = await getToken();
         const { data }   = await axios.get(
-          `http://localhost:3000/api/get-subscription-on-api?subId=${subscriptionId}`,
+          `${API_BASE_URL}/api/get-subscription-on-api?subId=${subscriptionId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setSubDetails(data?.data ?? null);
@@ -102,7 +103,7 @@ export default function PayScreen() {
     setCancelError(null);
     try {
       const token = await getToken();
-      await axios.delete('http://localhost:3000/api/cancel-subscriptions', {
+      await axios.delete(`${API_BASE_URL}/api/cancel-subscriptions`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { subId: sub?.sub_id },
       });

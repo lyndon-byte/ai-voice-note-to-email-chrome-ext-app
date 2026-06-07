@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Pusher from 'pusher-js';
 import axios from 'axios';
 import { getCurrentUser, getToken } from '../AuthGuard';
+import { API_BASE_URL } from '../config/api';
 
 export default function CheckOutScreen() {
 
@@ -17,7 +18,7 @@ export default function CheckOutScreen() {
   useEffect(() => {
     const pusher  = new Pusher('8cbe830be300102d4937', {
       cluster:      'us2',
-      authEndpoint: 'http://localhost:3000/pusher/auth',
+      authEndpoint: `${API_BASE_URL}/pusher/auth`,
     });
     const channel = pusher.subscribe(`private-user-${user.uid}`);
     channel.bind('subscription-payment', (e) => {
@@ -35,7 +36,7 @@ export default function CheckOutScreen() {
     try {
       const token    = await getToken();
       const { data } = await axios.post(
-        'http://localhost:3000/api/create-checkout-link',
+        `${API_BASE_URL}/api/create-checkout-link`,
         { email: user.email, name: user.displayName },
         { headers: { Authorization: `Bearer ${token}` } }
       );

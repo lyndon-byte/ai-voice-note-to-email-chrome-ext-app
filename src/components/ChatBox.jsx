@@ -6,6 +6,7 @@ import ChatBubble from './ChatBubble';
 import AudioRecorder from './AudioRecorder';
 import { useEffect, useState, useRef } from 'react'
 import { ChatBoxEmptyPlaceholder } from './ChatBoxEmptyPlaceholder';
+import { API_BASE_URL } from '../config/api';
 
 const ThinkingDots = () => (
   <div style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '2px 0' }}>
@@ -29,11 +30,11 @@ export default function ChatBox({ chatId, initialMessages,token,handleNewSession
   const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
-      api: 'http://localhost:3000/api/generate-email',
+      api: `${API_BASE_URL}/api/generate-email`,
     }),
   });
 
-  const MAX_SESSION_MESSAGES = 25;
+  const MAX_SESSION_MESSAGES = 24;
   const sessionTooLong = messages.length >= MAX_SESSION_MESSAGES;
 
  const insertIntoGmailStream = async (subjectText, bodyText, isDone = false) => {

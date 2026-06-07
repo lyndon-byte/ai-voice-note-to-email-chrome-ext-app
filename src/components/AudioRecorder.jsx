@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AudioWaveBar from './AudioWaveBar';
 import axios from 'axios';
 import { getToken } from '../AuthGuard';
+import { API_BASE_URL } from '../config/api';
 
 const UPGRADE_ERROR_CODES = new Set(['FREE_TIER_LIMIT_REACHED', 'SUBSCRIPTION_INACTIVE']);
 
@@ -78,7 +79,7 @@ export default function AudioRecorder({ onFinishTranscription, isDisabled}) {
         formData.append('file', blob, `audio-${Date.now()}-${crypto.randomUUID()}.webm`);
         try {
           const { data } = await axios.post(
-            'http://localhost:3000/api/transcribe',
+            `${API_BASE_URL}/api/transcribe`,
             formData,
             { headers: { authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
           );

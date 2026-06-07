@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 // ─── Cursor ───────────────────────────────────────────────────────────────────
 const Cursor = () => (
@@ -18,47 +18,26 @@ const Cursor = () => (
 
 export default function EmailCard({ subject, body, streaming }){
 
-  const [editSubject, setEditSubject] = useState(subject);
-  const [editBody,    setEditBody]    = useState(body);
-  const [isEditing,   setIsEditing]   = useState(false);
-  const [isDragging,  setIsDragging]  = useState(false);
-  const textareaRef = useRef(null);
- 
-  const autoResize = () => {
-    const el = textareaRef.current;
-    if (!el) return;
+  const [isDragging, setIsDragging] = useState(false);
 
-    el.style.height = 'auto';            // reset
-    el.style.height = el.scrollHeight + 'px'; // expand to content
-  };
-
-  useEffect(() => {
-    if (isEditing) {
-      autoResize();
-    }
-  }, [editBody, isEditing]);
-  // Sync streamed values only when not editing
-  useEffect(() => { if (!isEditing) setEditSubject(subject); }, [subject, isEditing]);
-  useEffect(() => { if (!isEditing) setEditBody(body);       }, [body,    isEditing]);
- 
   // ── Register drop listeners on the active tab via scripting ─────────────
   const registerDropTarget = async (subj, bdy) => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return;
- 
+
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: (subj, bdy) => {
           // Remove any previous listeners
           if (window.__aiDropCleanup__) window.__aiDropCleanup__();
- 
+
           const normalize = (t) => t.replace(/\n/g, '<div><br></div>');
- 
+
           const onDragOver = (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
- 
+
             // Highlight hovered droppable
             const el = e.target.closest(
               'input[name="subjectbox"], input, textarea, [contenteditable="true"]'
@@ -75,7 +54,7 @@ export default function EmailCard({ subject, body, streaming }){
               }
             }
           };
- 
+
           const onDrop = (e) => {
 
             e.preventDefault();
@@ -120,7 +99,7 @@ export default function EmailCard({ subject, body, streaming }){
             }
 
              if (!subjectEl && bodyEl && s) {
-              
+
               const combined = `Subject: ${s}\n\n${b || ''}`;
 
               if (bodyEl.isContentEditable) {
@@ -131,7 +110,7 @@ export default function EmailCard({ subject, body, streaming }){
                 bodyEl.dispatchEvent(new Event('input', { bubbles: true }));
               }
 
-              return; // 🚨 important: stop normal flow
+              return;
             }
 
 
@@ -151,18 +130,18 @@ export default function EmailCard({ subject, body, streaming }){
               }
             }
           };
-          
+
           const onDragLeave = (e) => {
             if (!e.relatedTarget || !document.contains(e.relatedTarget)) {
               document.querySelectorAll('.__ai_drop_highlight__')
                 .forEach(n => n.classList.remove('__ai_drop_highlight__'));
             }
           };
- 
+
           document.addEventListener('dragover',   onDragOver);
           document.addEventListener('drop',       onDrop);
           document.addEventListener('dragleave',  onDragLeave);
- 
+
           // Cleanup after 60s or on next call
           const cleanup = () => {
             document.removeEventListener('dragover',  onDragOver);
@@ -180,14 +159,13 @@ export default function EmailCard({ subject, body, streaming }){
       console.error('[AI Drag] registerDropTarget failed:', err);
     }
   };
- 
+
   // ── HTML5 drag events on the handle ──────────────────────────────────────
   const onHandleDragStart = (e) => {
-    // Store structured data — NOT plain text to avoid paste-as-text issues
-    const payload = JSON.stringify({ subject: editSubject, body: editBody });
+    const payload = JSON.stringify({ subject, body });
     e.dataTransfer.setData('application/x-ai-email', payload);
     e.dataTransfer.effectAllowed = 'copy';
- 
+
     // Custom drag image: small pill label
     const pill = document.createElement('div');
     pill.textContent = '✉ Drag to Gmail';
@@ -202,17 +180,15 @@ export default function EmailCard({ subject, body, streaming }){
     document.body.appendChild(pill);
     e.dataTransfer.setDragImage(pill, pill.offsetWidth / 2, 20);
     setTimeout(() => pill.remove(), 0);
- 
+
     setIsDragging(true);
- 
-    // Inject drop listeners into the page
-    registerDropTarget(editSubject, editBody);
+    registerDropTarget(subject, body);
   };
- 
+
   const onHandleDragEnd = () => {
     setIsDragging(false);
   };
- 
+
   const iconBtn = (label, clickFn, dragStartFn, dragEndFn, children) => (
     <button
       title={label}
@@ -233,7 +209,7 @@ export default function EmailCard({ subject, body, streaming }){
       {children}
     </button>
   );
- 
+
   return (
     <div
       style={{
@@ -261,12 +237,12 @@ export default function EmailCard({ subject, body, streaming }){
         <span className="text-gray-700" style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', flex: 1 }}>
           Draft Email
         </span>
- 
+
         {streaming && (
           <span style={{ fontSize: 10, color: '#ccc', fontFamily: 'DM Mono, monospace', marginRight: 4 }}>generating…</span>
         )}
- 
-        {/* Drag handle — draggable only this element */}
+
+        {/* Drag handle */}
         {!streaming && iconBtn(
           'Drag to Gmail fields',
           null,
@@ -281,61 +257,25 @@ export default function EmailCard({ subject, body, streaming }){
             <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
           </svg>
         )}
- 
-        {/* Edit / Done */}
-        {!streaming && iconBtn(
-          isEditing ? 'Done editing' : 'Edit',
-          () => setIsEditing(v => !v),
-          null, null,
-          isEditing
-            ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-            : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        )}
       </div>
- 
+
       <div style={{ padding: '12px 13px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* Subject */}
         <div>
           <div className="text-gray-700" style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 3 }}>Subject</div>
-          {isEditing
-            ? <input
-                value={editSubject}
-                onChange={e => setEditSubject(e.target.value)}
-                style={{
-                  width: '100%', fontSize: 14, fontWeight: 700, color: '#111',
-                  fontFamily: 'Plus Jakarta Sans, sans-serif', border: 'none',
-                  borderBottom: '1.5px solid #e0e0dc', background: 'transparent',
-                  outline: 'none', padding: '2px 0', lineHeight: 1.4,
-                }}
-              />
-            : <div style={{ fontSize: 14, color: '#111', fontWeight: 700, lineHeight: 1.4, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                {editSubject || <> <span style={{ color: '#e0e0dc' }}>—</span> <Cursor /> </>}
-              </div>
-          }
+          <div style={{ fontSize: 14, color: '#111', fontWeight: 700, lineHeight: 1.4, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            {subject || <><span style={{ color: '#e0e0dc' }}>—</span> <Cursor /></>}
+          </div>
         </div>
- 
+
         <div style={{ height: 1, background: '#f2f2ee' }} />
- 
+
         {/* Body */}
         <div>
           <div className="text-gray-700" style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Message</div>
-          {isEditing
-            ? <textarea
-                ref={textareaRef}
-                value={editBody}
-                onChange={e => setEditBody(e.target.value)}
-                rows={6}
-                style={{
-                  width: '100%', fontSize: 13, color: '#555', lineHeight: 1.8,
-                  fontFamily: 'DM Mono, monospace', border: 'none',
-                  borderBottom: '1.5px solid #e0e0dc', background: 'transparent',
-                  outline: 'none', resize: 'vertical', padding: '2px 0',
-                }}
-              />
-            : <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8, fontFamily: 'DM Mono, monospace', whiteSpace: 'pre-wrap' }}>
-                {editBody || <><span style={{ color: '#101828' }}>Composing…</span> <Cursor /></>}
-              </div>
-          }
+          <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8, fontFamily: 'DM Mono, monospace', whiteSpace: 'pre-wrap' }}>
+            {body || <><span style={{ color: '#101828' }}>Composing…</span> <Cursor /></>}
+          </div>
         </div>
       </div>
     </div>
