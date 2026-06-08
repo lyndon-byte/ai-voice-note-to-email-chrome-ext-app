@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Talking to Eleven",
+  "name": "Talking to Eleven - Voice Note To Email AI",
   "version": "1.0.0",
-  "description": "Record voice notes and send them via email",
+  "description": "Record voice notes and turn into structured and ready to send emails",
+   "icons": {
+    "128": "/talking-to-eleven-icon.png"
+  },
   "permissions": [
     "activeTab", 
     "storage", 
